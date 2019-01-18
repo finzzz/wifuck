@@ -41,6 +41,9 @@ class Jailer:
                 if self.isAlive(_):
                     self.spoof(router, _)
                     time.sleep(1)
+            
+            # avoid 99% cpu usage
+            time.sleep(0.2)
                     
     def execute(self):
         while 1:
