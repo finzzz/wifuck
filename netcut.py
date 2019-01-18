@@ -4,6 +4,7 @@ from scapy.all import*
 import csv
 import re
 import ipaddress
+import argparse
 
 class Jailer:
     all_computer = "ff:ff:ff:ff:ff:ff"
@@ -116,8 +117,15 @@ if __name__ == "__main__":
     cidr="24"
     interval = 90
 
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--interval', type=int, default=90, help="interval")
+    parser.add_argument('--router', default="10.2.255.254", help="router IP")
+    parser.add_argument('--init', default="10.2.1.0", help="initial IP")
+    parser.add_argument('--cidr', default="24")
+    args = parser.parse_args()
+
     # jail(routerIP, interval)
-    j = Jailer(initIP, cidr, routerIP, interval)
+    j = Jailer(args.init, args.cidr, args.router, args.interval)
     j.execute()
         
 
