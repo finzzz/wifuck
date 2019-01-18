@@ -50,7 +50,7 @@ class Jailer:
         while 1:
             try:
                 self.jail()
-                print(f"{self.getTime()} >>> try again...")
+                print(f"{self.getTime()} >>> rescanning...")
             except KeyboardInterrupt:
                 print("======= unjailed! ========")
                 sys.exit()
