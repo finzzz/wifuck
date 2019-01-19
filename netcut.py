@@ -44,7 +44,9 @@ class Jailer:
     def jail(self):
         router = {"ip":self.routerIP,"mac":self.findMAC(self.routerIP)}
         found, not_found, time_elapsed = self.findIP(self.blacklist)
-        print(f"{self.getTime()} >>> {len(found)}/{len(not_found)} found in {time_elapsed:.2f}s")
+
+        print(f"{self.getTime()} >>> {len(found)}/{len(self.blacklist)} "
+              f"found in {time_elapsed:.2f}s")
 
         timer = time.time()
         while time.time() <= timer + self.interval:
