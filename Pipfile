@@ -9,6 +9,7 @@ verify_ssl = true
 scapy = "*"
 requests = "*"
 python-nmap = "*"
+flake8 = "*"
 
 [requires]
 python_version = "3.7"
