@@ -5,6 +5,7 @@ import csv
 import re
 import ipaddress
 import argparse
+from shutil import which
 
 class Jailer:
     all_computer = "ff:ff:ff:ff:ff:ff"
@@ -15,7 +16,16 @@ class Jailer:
         self.routerIP = routerIP
         self.interval = interval
         self.blacklist = self.getBlacklist()
-        
+        self.checkTCPDump()
+
+    def checkTCPDump(self):
+        try:
+            if which("tcpdump") is None:
+                raise Exception
+        except Exception:
+            print(f"{self.getTime()} >>> {sys.argv[0]} needs TCPDump")
+            sys.exit()
+    
     @staticmethod
     def getBlacklist():
         blacklist = list()
