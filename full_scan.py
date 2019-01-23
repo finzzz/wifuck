@@ -67,9 +67,12 @@ def scan_devices(initial_IP="10.2.1.0", cidr="24",detail=False):
             writer = csv.writer(af,delimiter=",")
             writer.writerow([ip_addrs, mac_addrs, shorten_vendor, hostname, shorten_os, os_guess_acc])
 
-        # print(f"ip={ip_addrs} mac={mac_addrs} vendor={shorten_vendor} "\
-        #     f"hostname=\"{hostname}\" os={shorten_os}~{os_guess_acc}%")
+        print(f"ip={ip_addrs} mac={mac_addrs} vendor={shorten_vendor} "
+              f"hostname=\"{hostname}\" os={shorten_os}~{os_guess_acc}%")
 
     end = time.time()
     elapsed_time = end-start
     print(f"{len(ans)} devices are found in {elapsed_time:.2f}s")
+
+
+scan_devices(detail=True)
