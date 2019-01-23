@@ -1,23 +1,26 @@
-from scapy.all import *
+from scapy.all import srp, Ether, ARP
 import requests
 import csv
 import nmap
 import time
 import argparse
+import sys
+
 
 # need root access if detail is True
 # need to install nmap
-def scan_devices(initial_IP="10.2.1.0", cidr="24",detail=False):
+def scan_devices(initial_IP="10.2.1.0", cidr="24", detail=False):
     print("scanning...")
     start = time.time()
     MAC_URL = "http://macvendors.co/api/"
     all_computer = "ff:ff:ff:ff:ff:ff"
-    ans, unans = srp(Ether(dst=all_computer)/ARP(pdst=initial_IP+"/"+cidr),timeout=2, verbose=False)
+    ans, unans = srp(Ether(dst=all_computer)/ARP(pdst=initial_IP+"/"+cidr),
+                     timeout=2, verbose=False)
 
     new_mac_prefixes = []
     nm = nmap.PortScanner()
 
-    with open("scan_result.csv", mode="w", newline="") as wf:
+    with open("scan_result.csv", mode="w", newline=""):
         pass
 
     for _ in ans:
@@ -36,8 +39,13 @@ def scan_devices(initial_IP="10.2.1.0", cidr="24",detail=False):
                 os_guess = nm[ip_addrs]['osmatch'][0].get("name")
                 os_guess_acc = nm[ip_addrs]['osmatch'][0].get("accuracy")
                 hostname = nm[ip_addrs].hostname()
-            except:
+            except nmap.PortScannerError:
+                print("need root access to predict os")
+                sys.exit(1)
+            except IndexError:
                 pass
+            except Exception as e:
+                print(e)
 
         with open("vendor_list.csv", newline="") as rf:
             reader = csv.reader(rf)
@@ -57,15 +65,16 @@ def scan_devices(initial_IP="10.2.1.0", cidr="24",detail=False):
                 vendor = "Unknown"
 
             with open("vendor_list.csv", mode="a", newline="") as af:
-                writer = csv.writer(af,delimiter=",")
+                writer = csv.writer(af, delimiter=",")
                 writer.writerow([vendor_prefix, vendor])
 
         shorten_vendor = vendor.split()[0].split(",")[0]
         shorten_os = os_guess[:10]
 
         with open("scan_result.csv", mode="a", newline="") as af:
-            writer = csv.writer(af,delimiter=",")
-            writer.writerow([ip_addrs, mac_addrs, shorten_vendor, hostname, shorten_os, os_guess_acc])
+            writer = csv.writer(af, delimiter=",")
+            writer.writerow([ip_addrs, mac_addrs, shorten_vendor,
+                             hostname, shorten_os, os_guess_acc])
 
         print(f"ip={ip_addrs} mac={mac_addrs} vendor={shorten_vendor} "
               f"hostname=\"{hostname}\" os={shorten_os}~{os_guess_acc}%")

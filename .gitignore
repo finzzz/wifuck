@@ -1,2 +1,7 @@
 hist1.py
 test.py
+.DS_Store
+*.csv
+*.xlsx
+
+!vendor_list.csv
