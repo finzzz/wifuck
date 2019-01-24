@@ -3,7 +3,7 @@ import requests
 import csv
 import nmap
 import time
-import socket
+import argparse
 
 # need root access if detail is True
 # need to install nmap
@@ -75,4 +75,8 @@ def scan_devices(initial_IP="10.2.1.0", cidr="24",detail=False):
     print(f"{len(ans)} devices are found in {elapsed_time:.2f}s")
 
 
-scan_devices(detail=True)
+parser = argparse.ArgumentParser()
+parser.add_argument('-m', '--mode', action='store_true')
+args = parser.parse_args()
+
+scan_devices(detail=args.mode)
