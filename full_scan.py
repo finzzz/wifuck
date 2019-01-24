@@ -32,7 +32,7 @@ def scan_devices(initial_IP="10.2.1.0", cidr="24", detail=False):
         os_guess = ""
         os_guess_acc = ""
         hostname = ""
-        
+
         if detail:
             try:
                 nm.scan(ip_addrs, '22-443', arguments="-O")
