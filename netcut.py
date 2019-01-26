@@ -5,20 +5,26 @@ import re
 import ipaddress
 import argparse
 import time
+import requests
 from shutil import which
 
 
 class Jailer:
     all_computer = "ff:ff:ff:ff:ff:ff"
 
-    def __init__(self, initIP, cidr, routerIP, interval=300, verbose=False):
+    def __init__(self, initIP, cidr, routerIP,
+                 interval=300, verbose=False,
+                 bunk=False):
         self.initIP = initIP
         self.cidr = cidr
         self.routerIP = routerIP
         self.interval = interval
         self.verbose = verbose
         self.blacklist = self.getBlacklist()
+        self.bunk = bunk
         self.checkTCPDump()
+        self.unknowns = list()
+        self.not_unknowns = list()
 
     def checkTCPDump(self):
         try:
@@ -44,9 +50,16 @@ class Jailer:
         return time.strftime("%H:%M:%S", time.localtime())
 
     def jail(self, router):
-        found, not_found, time_elapsed = self.findIP(self.blacklist)
 
-        print(f"{self.getTime()} >>> {len(found)}/{len(self.blacklist)} "
+        start = time.time()
+        ans = self.scan_network()
+        time_elapsed = time.time() - start
+        full_list = self.blacklist
+        if self.bunk:
+            self.findUnknownMAC(ans, full_list)
+
+        found, not_found = self.findIP(ans, full_list)
+        print(f"{self.getTime()} >>> {len(found)}/{len(full_list)} "
               f"found in {time_elapsed:.2f}s")
 
         timer = time.time()
@@ -69,13 +82,16 @@ class Jailer:
                 print("======= unjailed! ========")
                 sys.exit()
 
-    def findIP(self, MAC):
-        start = time.time()
+    def scan_network(self):
+        ans, unans = srp(Ether(dst=Jailer.all_computer)/ARP(pdst=self.initIP +
+                         "/"+self.cidr), timeout=2, verbose=False)
+
+        return ans
+
+    def findIP(self, ans, MAC):
         not_found = list(MAC)
         found = list()
 
-        ans, unans = srp(Ether(dst=Jailer.all_computer)/ARP(pdst=self.initIP +
-                         "/"+self.cidr), timeout=2, verbose=False)
         for s, r in ans:
             for _ in MAC:
                 mac_temp = r[Ether].src
@@ -83,9 +99,54 @@ class Jailer:
                     not_found.remove(mac_temp)
                     found.append({"ip": r[Ether].psrc, "mac": mac_temp})
 
-        end = time.time()
-        time_elapsed = end - start
-        return found, not_found, time_elapsed
+        return found, not_found
+
+    @staticmethod
+    def findMACVendorFromAPI(mac):
+        MAC_URL = "http://macvendors.co/api/"
+        r = requests.get(MAC_URL+mac)
+        response = r.json().get("result")
+        vendor = response.get("company")
+
+        # vendor is not found
+        if not vendor:
+            vendor = "Unknown"
+        return vendor
+
+    def findUnknownMAC(self, ans, input_list):
+        for _ in ans:
+            mac_addrs = _[1].src
+            vendor = ""
+
+            if mac_addrs in self.unknowns and mac_addrs not in input_list:
+                print(mac_addrs)
+                input_list.append(mac_addrs)
+                continue
+
+            if mac_addrs in self.not_unknowns:
+                continue
+
+            vendor = self.findMACVendor(mac_addrs)
+            is_weird_vendor = vendor == "Unknown" or vendor == "Private"
+            if mac_addrs not in input_list and is_weird_vendor:
+                input_list.append(mac_addrs)
+                self.unknowns.append(mac_addrs)
+            elif not is_weird_vendor:
+                self.not_unknowns.append(mac_addrs)
+
+    def findMACVendor(self, MAC):
+        vendor = ""
+        with open("vendor_list.csv", newline="") as rf:
+            reader = csv.reader(rf)
+            for row in reader:
+                if row[0] == MAC[:8]:
+                    vendor = row[1]
+
+        # if vendor is not found in vendor_list.csv
+        if not vendor:
+            vendor = self.findMACVendorFromAPI(MAC)
+
+        return vendor
 
     @staticmethod
     def findMAC(IP):
@@ -143,9 +204,11 @@ if __name__ == "__main__":
     parser.add_argument('--init', default="10.2.1.0", help="initial IP")
     parser.add_argument('--cidr', default="24")
     parser.add_argument('-v', '--verbose', action='store_true')
+    parser.add_argument('-b', '--bunk', action='store_true')
     args = parser.parse_args()
 
     # jail(routerIP, interval)
     j = Jailer(args.init, args.cidr, args.router,
-               args.interval, verbose=args.verbose)
+               args.interval, verbose=args.verbose,
+               bunk=args.bunk)
     j.execute()
