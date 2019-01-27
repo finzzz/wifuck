@@ -102,9 +102,13 @@ class Jailer:
         return found, not_found
 
     @staticmethod
-    def findMACVendorFromAPI(mac):
+    def findMACVendorFromAPI(self, mac):
         MAC_URL = "http://macvendors.co/api/"
-        r = requests.get(MAC_URL+mac)
+
+        # autoclose session
+        with requests.Session() as s:
+            r = s.get(MAC_URL+mac)
+        
         response = r.json().get("result")
         vendor = response.get("company")
 
