@@ -89,14 +89,14 @@ class Jailer:
         return ans
 
     def findIP(self, ans, MAC):
-        not_found = list(MAC)
+        not_found = set(MAC)
         found = list()
 
         for s, r in ans:
             for _ in MAC:
                 mac_temp = r[Ether].src
                 if mac_temp == _:
-                    not_found.remove(mac_temp)
+                    not_found.discard(mac_temp)
                     found.append({"ip": r[Ether].psrc, "mac": mac_temp})
 
         return found, not_found
@@ -108,7 +108,7 @@ class Jailer:
         # autoclose session
         with requests.Session() as s:
             r = s.get(MAC_URL+mac)
-        
+
         response = r.json().get("result")
         vendor = response.get("company")
 
