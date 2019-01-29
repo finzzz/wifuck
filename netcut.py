@@ -101,22 +101,6 @@ class Jailer:
 
         return found, not_found
 
-    @staticmethod
-    def findMACVendorFromAPI(self, mac):
-        MAC_URL = "http://macvendors.co/api/"
-
-        # autoclose session
-        with requests.Session() as s:
-            r = s.get(MAC_URL+mac)
-
-        response = r.json().get("result")
-        vendor = response.get("company")
-
-        # vendor is not found
-        if not vendor:
-            vendor = "Unknown"
-        return vendor
-
     def findUnknownMAC(self, ans, input_list):
         for _ in ans:
             mac_addrs = _[1].src
@@ -138,20 +122,6 @@ class Jailer:
             elif not is_weird_vendor:
                 self.not_unknowns.append(mac_addrs)
 
-    def findMACVendor(self, MAC):
-        vendor = ""
-        with open("vendor_list.csv", newline="") as rf:
-            reader = csv.reader(rf)
-            for row in reader:
-                if row[0] == MAC[:8]:
-                    vendor = row[1]
-
-        # if vendor is not found in vendor_list.csv
-        if not vendor:
-            vendor = self.findMACVendorFromAPI(MAC)
-
-        return vendor
-
     def findMACVendorFromAPI(self, mac):
         MAC_URL = "http://macvendors.co/api/"
 
@@ -166,27 +136,6 @@ class Jailer:
         if not vendor:
             vendor = "Unknown"
         return vendor
-
-    def findUnknownMAC(self, ans, input_list):
-        for _ in ans:
-            mac_addrs = _[1].src
-            vendor = ""
-
-            if mac_addrs in self.unknowns and mac_addrs not in input_list:
-                print(mac_addrs)
-                input_list.append(mac_addrs)
-                continue
-
-            if mac_addrs in self.not_unknowns:
-                continue
-
-            vendor = self.findMACVendor(mac_addrs)
-            is_weird_vendor = vendor == "Unknown" or vendor == "Private"
-            if mac_addrs not in input_list and is_weird_vendor:
-                input_list.append(mac_addrs)
-                self.unknowns.append(mac_addrs)
-            elif not is_weird_vendor:
-                self.not_unknowns.append(mac_addrs)
 
     def findMACVendor(self, MAC):
         vendor = ""
