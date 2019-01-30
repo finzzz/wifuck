@@ -130,12 +130,14 @@ class Jailer:
             while True:
                 try:
                     r = s.get(MAC_URL+mac)
-                except Exception:
-                    pass
+                    break
+                except requests.exceptions.RequestException as e:
+                    print(f"{self.getTime()} >>> {e}")
+                except Exception as e:
+                    print(f"{self.getTime()} >>> {e}")
 
         response = r.json().get("result")
         vendor = response.get("company")
-
         # vendor is not found
         if not vendor:
             vendor = "Unknown"
@@ -143,7 +145,7 @@ class Jailer:
 
     def findMACVendor(self, MAC):
         vendor = ""
-        with open("vendor_list.csv", newline="") as rf:
+        with open("vendor_list.csv", "r") as rf:
             reader = csv.reader(rf)
             for row in reader:
                 if row[0] == MAC[:8]:
@@ -152,6 +154,9 @@ class Jailer:
         # if vendor is not found in vendor_list.csv
         if not vendor:
             vendor = self.findMACVendorFromAPI(mac=MAC)
+            with open("vendor_list.csv", "a") as af:
+                writer = csv.writer(af, delimiter=",")
+                writer.writerow([MAC[:8], vendor])
 
         return vendor
 
