@@ -127,7 +127,11 @@ class Jailer:
 
         # autoclose session
         with requests.Session() as s:
-            r = s.get(MAC_URL+mac)
+            while True:
+                try:
+                    r = s.get(MAC_URL+mac)
+                except:
+                    pass
 
         response = r.json().get("result")
         vendor = response.get("company")
