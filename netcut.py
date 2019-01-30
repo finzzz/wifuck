@@ -130,7 +130,7 @@ class Jailer:
             while True:
                 try:
                     r = s.get(MAC_URL+mac)
-                except:
+                except Exception:
                     pass
 
         response = r.json().get("result")
