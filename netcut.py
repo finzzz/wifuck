@@ -21,6 +21,7 @@ class Jailer:
         self.interval = interval
         self.verbose = verbose
         self.blacklist = self.getBlacklist()
+        self.whitelist = self.getWhiteList()
         self.bunk = bunk
         self.checkTCPDump()
         self.unknowns = list()
@@ -57,9 +58,11 @@ class Jailer:
         full_list = self.blacklist
         if self.bunk:
             self.findUnknownMAC(ans, full_list)
+        self.removeWhitelisted(full_list)
 
         found, not_found = self.findIP(ans, full_list)
-        print(f"{self.getTime()} >>> {len(found)}/{len(full_list)} "
+        for _ in found: print(_.get("mac"), end=" ")  # noqa:E701
+        print(f"\n{self.getTime()} >>> {len(found)}/{len(full_list)} "
               f"found in {time_elapsed:.2f}s")
 
         timer = time.time()
@@ -101,6 +104,7 @@ class Jailer:
 
         return found, not_found
 
+    # and intel
     def findUnknownMAC(self, ans, input_list):
         for _ in ans:
             mac_addrs = _[1].src
@@ -115,7 +119,7 @@ class Jailer:
                 continue
 
             vendor = self.findMACVendor(mac_addrs)
-            is_weird_vendor = vendor == "Unknown" or vendor == "Private"
+            is_weird_vendor = vendor == "Unknown" or vendor == "Private" or vendor[:5] == "Intel"  # noqa:E501
             if mac_addrs not in input_list and is_weird_vendor:
                 input_list.append(mac_addrs)
                 self.unknowns.append(mac_addrs)
@@ -202,6 +206,22 @@ class Jailer:
         send(ARP(op=2, pdst=router.get("ip"), psrc=victim.get("ip"),
                  hwdst=router.get("mac")), verbose=False)
         time.sleep(0.2)
+
+    @staticmethod
+    def getWhiteList():
+        whiteList = list()
+        with open("whitelist.csv", newline="") as f:
+            reader = csv.reader(f)
+            for row in reader:
+                whiteList.append(row[0])
+
+        return whiteList
+
+    def removeWhitelisted(self, input_list):
+        for item in input_list:
+            if item in self.whitelist:
+                input_list.remove(item)
+
 
 
 if __name__ == "__main__":
