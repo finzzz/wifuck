@@ -223,7 +223,6 @@ class Jailer:
                 input_list.remove(item)
 
 
-
 if __name__ == "__main__":
     routerIP = "10.2.255.254"
     initIP = "10.2.1.0"
@@ -243,4 +242,9 @@ if __name__ == "__main__":
     j = Jailer(args.init, args.cidr, args.router,
                args.interval, verbose=args.verbose,
                bunk=args.bunk)
-    j.execute()
+
+    while 1:
+        try:
+            j.execute()
+        except Exception as e:
+            print(f"Restarting App : {e}")
